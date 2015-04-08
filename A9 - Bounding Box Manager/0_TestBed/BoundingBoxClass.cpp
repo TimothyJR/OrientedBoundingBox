@@ -94,6 +94,61 @@ void BoundingBoxClass::GenerateOrientedBoundingBox(String a_sInstanceName)
 void BoundingBoxClass::GenerateAxisAlignedBoundingBox(matrix4 a_m4ModeltoWorld)
 {
 	//Generate the Axis Aligned Bounding Box here based on the Oriented Bounding Box
+
+	// Create the rectangle from the oriented bounding box
+
+	vector3 maxOriented = this->GetMaximumOBB();
+	vector3 minOriented = this->GetMinimumOBB();
+
+	// Get the center of the oriented bounding box
+	vector3 centerOriented = (maxOriented + minOriented) / 2.0f;
+	vector3 sizes = maxOriented - centerOriented;
+	
+	// Create vectors for max and min
+	vector3 maxVec;
+	vector3 minVec;
+
+	// Get matrix without translation
+	glm::mat3 transformNoTranslate = glm::mat3(a_m4ModeltoWorld);
+
+	// Go through each axis and create points
+	for(int x = -1; x < 2; x += 2)
+	{
+		for(int y = -1; y < 2; y += 2)
+		{
+			for(int z = -1; z < 2; z += 2)
+			{
+				vector3 point;
+				// Create the points
+				point.x = x * sizes.x;
+				point.y = y * sizes.y;
+				point.z = z * sizes.z;
+				point += centerOriented;
+				// Rotate the point
+				point = transformNoTranslate * point;
+
+				// Find the max and min
+				maxVec = glm::max(maxVec, point);
+				minVec = glm::min(minVec, point);
+			}
+		}
+	}
+
+	// Find the center
+	axisAlignedCenter = (maxVec + minVec) / 2.0f;
+
+	// Get the size on each axis
+	axisAlignedSize.x = glm::distance(vector3(minVec.x, 0.0f, 0.0f), vector3(maxVec.x, 0.0f, 0.0f));
+	axisAlignedSize.y = glm::distance(vector3(0.0f, minVec.y, 0.0f), vector3(0.0f, maxVec.y, 0.0f));
+	axisAlignedSize.z = glm::distance(vector3(0.0f, 0.0f, minVec.z), vector3(0.0f, 0.0f, maxVec.z));
+
+	matrix4 transformTranslateOnly = glm::mat4(1.0f);
+	transformTranslateOnly[3] = a_m4ModeltoWorld[3];
+
+	// Add to the render list
+	MeshManagerSingleton* pMeshMngr = MeshManagerSingleton::GetInstance();
+	pMeshMngr->AddCubeToQueue(transformTranslateOnly * glm::translate(axisAlignedCenter) * glm::scale(axisAlignedSize), axisAlignedColor, MERENDER::WIRE);
+
 }
 void BoundingBoxClass::AddBoxToRenderList(matrix4 a_m4ModelToWorld, vector3 a_vColor, bool a_bRenderCentroid)
 {

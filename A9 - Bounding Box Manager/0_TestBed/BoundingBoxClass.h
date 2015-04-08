@@ -79,6 +79,11 @@ public:
 	void AddBoxToRenderList(matrix4 a_mModelToWorld, vector3 a_vColor, bool a_bRenderCentroid = false);
 
 	
+	// New variables to help with creating axis aligned bounding box and collisions
+	vector3 axisAlignedSize;
+	vector3 axisAlignedCenter;
+	vector3 axisAlignedColor;
+
 private:
 	/* Releases the object from memory */
 	void Release(void);
