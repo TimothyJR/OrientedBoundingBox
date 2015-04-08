@@ -130,35 +130,46 @@ void BoundingBoxManagerSingleton::CalculateCollision(void)
 	for(int nBox = 0; nBox < m_nBoxs; nBox++)
 	{
 		//Make all the Boxs white
-		m_lColor[nBox] = vector3(1.0f);
+		m_lColor[nBox] = vector3(0.0f);
 		//Place all the centroids of Boxs in global space
 		lCentroid.push_back(static_cast<vector3>(m_lMatrix[nBox] * vector4(m_lBox[nBox]->GetCentroid(), 1.0f)));
+
+		m_lBox[nBox] -> axisAlignedColor = vector3(1.0f);
 	}
 
 	//Now the actual check
 	for(int i = 0; i < m_nBoxs - 1; i++)
 	{
+		vector3 halfBox1Size = m_lBox[i]->axisAlignedSize / 2.0f;
+		vector3 trans1 = vector3(m_lMatrix[i][3]);
+		vector3 box1center = trans1 + m_lBox[i]->axisAlignedCenter;
+
 		for(int j = i + 1; j < m_nBoxs; j++)
 		{
-			//If the distance between the center of both Boxs is less than the sum of their radius there is a collision
-			//For this check we will assume they will be colliding unless they are not in the same space in X, Y or Z
-			//so we place them in global positions
-			vector3 v1Min = static_cast<vector3>(m_lMatrix[i] * vector4(m_lBox[i]->GetMinimumOBB(),1));
-			vector3 v1Max = static_cast<vector3>(m_lMatrix[i] * vector4(m_lBox[i]->GetMaximumOBB(),1));
+			vector3 halfBox2size = m_lBox[j]->axisAlignedSize / 2.0f;
+			vector3 trans2 = vector3(m_lMatrix[j][3]);
+			vector3 box2center = trans2 + m_lBox[j]->axisAlignedCenter;
 
-			vector3 v2Min = static_cast<vector3>(m_lMatrix[j] * vector4(m_lBox[j]->GetMinimumOBB(),1));
-			vector3 v2Max = static_cast<vector3>(m_lMatrix[j] * vector4(m_lBox[j]->GetMaximumOBB(),1));
+			vector3 dist = glm::abs(box1center - box2center);
 
-			bool bColliding = true;
-			if(v1Max.x < v2Min.x || v1Min.x > v2Max.x)
-				bColliding = false;
-			else if(v1Max.y < v2Min.y || v1Min.y > v2Max.y)
-				bColliding = false;
-			else if(v1Max.z < v2Min.z || v1Min.z > v2Max.z)
-				bColliding = false;
+			vector3 sumHalfSizes = halfBox1Size + halfBox2size;
 
-			if(bColliding)
-				m_lColor[i] = m_lColor[j] = MERED; //We make the Boxes red
+			bool colliding = true;
+
+			for(int k = 0; k < 3; k++)
+			{
+				if(dist[k] > sumHalfSizes[k])
+				{
+					colliding = false;
+					break;
+				}
+			}
+
+			if(colliding)
+			{
+				m_lColor[i] = m_lColor[j] = MECYAN; // make the inside box of both models cyan
+				m_lBox[i]->axisAlignedColor = m_lBox[j]->axisAlignedColor = MERED; //We make the outside box of both models red
+			}
 		}
 	}
 }
